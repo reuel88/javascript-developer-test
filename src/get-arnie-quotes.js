@@ -17,6 +17,7 @@ class HttpError extends Error {
     }
 }
 
+
 const createErrorResponse = (error) => {
     return {
         [ERROR_KEY]: error.message,
@@ -63,9 +64,24 @@ const processUrl = async (url) => {
     }
 }
 
-const getArnieQuotes = async (urls) => {
-    const promises = urls.map(processUrl)
-    return Promise.all(promises);
+const chunk = (arr, size) => {
+    const out = [];
+    for (let i = 0; i < arr.length; i += size) out.push(arr.slice(i, i + size));
+    return out;
+};
+
+const getArnieQuotes = async (urls, batchSize = 10) => {
+    const size = Number.isInteger(batchSize) && batchSize > 0 ? batchSize : 10;
+
+    const results = [];
+
+    for (const group of chunk(urls, size)) {
+        const promises = group.map(processUrl);
+        const batchResults = await Promise.all(promises);
+        results.push(...batchResults);
+    }
+
+    return results;
 };
 
 module.exports = {
